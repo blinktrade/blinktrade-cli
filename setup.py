@@ -14,7 +14,7 @@ setup(
   version=version,
   author="Rodrigo Souza",
   packages = [
-    "veloxbot"
+    "blinktrade-cli"
     ],
   entry_points = { 'console_scripts':
                      [

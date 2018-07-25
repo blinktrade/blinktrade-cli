@@ -337,7 +337,8 @@ class BlinkTradeCli(object):
                'PercentFee', 'Status']
     return headers, records
 
-
-if __name__ == '__main__':
+def main():
   fire.Fire(BlinkTradeCli)
 
+if __name__ == '__main__':
+  main()
