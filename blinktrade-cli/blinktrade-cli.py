@@ -18,7 +18,7 @@ class BlinkTradeCli(object):
                blinktrade_api_secret=None):
     self._verbose = verbose
     self._show_header = show_header
-    self._broker_id = broker_id
+    self._broker_id = int(broker_id)
     self._key = blinktrade_api_key
     self._secret = blinktrade_api_secret
     if not blinktrade_api_key:
@@ -108,12 +108,6 @@ class BlinkTradeCli(object):
             res.insert(0, record)
     return res
 
-  def _printout_result(self, res_header, res_body):
-    if self._show_header:
-      print (json.dumps(res_header)[1:-1])
-    for line in res_body:
-      print json.dumps(line)[1:-1]
-
   def list_withdrawals(self,status_list=None, page=0, num_pages=None):
     if status_list is None:
       status_list = "[]"
@@ -129,6 +123,71 @@ class BlinkTradeCli(object):
       self.get_list('U30', 'DepositList', {'StatusList': status_list}, page, num_pages))
     self._printout_result(res[0], res[1])
 
+  def _handle_response(self, api_response, msg_type):
+    if api_response['Status'] != 200:
+      if self._show_header:
+        print '"Error","Description","Details"'
+      print json.dumps([
+        api_response["Status"],
+        api_response["Description"],
+        api_response["Detail"] if "Detail" in api_response else ""])[1:-1]
+      return
+
+    for response in api_response["Responses"]:
+      if response["MsgType"] == msg_type:
+        if msg_type == "U19" and response["Type"] == "CRY":
+          self._printout_deposit_address_response(response)
+        return
+
+  def _printout_deposit_address_response(self, response):
+    if self._show_header:
+      print '"DepositID", "InputAddress", "State", "CreditProvided", "Value", "PaidValue"'
+    print json.dumps( [ response["DepositID"],
+                        response["Data"]["InputAddress"],
+                        response["State"],
+                        response["CreditProvided"] / 1e8,
+                        response["Value"] / 1e8,
+                        response["PaidValue"] / 1e8
+                        ])[1:-1]
+
+  def create_bitcoin_deposit_address(self):
+    requestId = random.randint(1, 100000)
+    msg = {
+      "MsgType": "U18",
+      "DepositReqID": requestId,
+      "Currency": "BTC",
+      "BrokerID": self._broker_id
+    }
+    self._handle_response(self.send_message(msg),"U19")
+
+  def request_bitcoin_credit(self, deposit_id, amount):
+    requestId = random.randint(1, 100000)
+    msg = {
+      "MsgType": "U18",
+      "DepositReqID": requestId,
+      "DepositID": deposit_id,
+      "BrokerID": self._broker_id,
+      "Action": "CREDIT",
+      "Value": int(amount * 1e8)
+    }
+    self._handle_response(self.send_message(msg), "U19")
+
+  def cancel_deposit(self, deposit_id):
+    requestId = random.randint(1, 100000)
+    msg = {
+      "MsgType": "U18",
+      "DepositReqID": requestId,
+      "DepositID": deposit_id,
+      "BrokerID": self._broker_id,
+      "Action": "CANCEL"
+    }
+    self._handle_response(self.send_message(msg), "U19")
+
+  def _printout_result(self, res_header, res_body):
+    if self._show_header:
+      print json.dumps(res_header)[1:-1]
+    for line in res_body:
+      print json.dumps(line)[1:-1]
 
   def _handle_deposit_list(self, deposit_list):
     records = []
