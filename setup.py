@@ -14,15 +14,16 @@ setup(
   version=version,
   author="Rodrigo Souza",
   packages = [
-    "blinktrade-cli"
+    "blinktrade_cli"
     ],
   entry_points = { 'console_scripts':
                      [
-                       'veloxbot blinktrade-cli.blinktrade-cli:main'
+                       'blinktrade-cli = blinktrade_cli.main:main'
                      ]
   },
   install_requires=REQUIREMENTS,
   author_email='contact@blinktrade.com',
+  license='http://www.gnu.org/copyleft/gpl.html',
   url='https://github.com/blinktrade/blinktrade-cli',
   description='BlinkTrade client'
 )
