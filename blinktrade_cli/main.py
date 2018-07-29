@@ -27,6 +27,7 @@ class BlinkTradeCli(object):
     self._show_header = show_header
     self._key = blinktrade_api_key
     self._secret = blinktrade_api_secret
+    self._backend = os.getenv('BLINKTRADE_API_BACKEND',"")
     if not blinktrade_api_key:
       self._key = os.getenv('BLINKTRADE_API_KEY')
       assert self._key, 'No BLINKTRADE_API_KEY'
@@ -59,8 +60,9 @@ class BlinkTradeCli(object):
     }
 
     blinktrade_api_url = "https://api.blinktrade.com"
-    if self._broker_id == 11 or self._broker_id == 8999999:
-      blinktrade_api_url = "https://bitcambio_api.blinktrade.com"
+
+    if self._backend:
+      blinktrade_api_url = "https://" + self._backend +  "_api.blinktrade.com"
 
     url = '%s/tapi/%s/message' % (blinktrade_api_url, BLINKTRADE_API_VERSION)
 
