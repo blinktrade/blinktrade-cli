@@ -9,16 +9,22 @@ import os
 import time
 import fire
 import json
+import datetime
+
+def json_serial(obj):
+  if isinstance(obj, (datetime.datetime, datetime.date)):
+    return obj.isoformat()
+  raise TypeError("Type %s not serializable" % type(obj))
+
 
 class BlinkTradeCli(object):
-  def __init__(self, broker_id=11,
+  def __init__(self, broker_id=None,
                verbose=False,
                show_header=True,
                blinktrade_api_key=None,
                blinktrade_api_secret=None):
     self._verbose = verbose
     self._show_header = show_header
-    self._broker_id = int(broker_id)
     self._key = blinktrade_api_key
     self._secret = blinktrade_api_secret
     if not blinktrade_api_key:
@@ -27,6 +33,8 @@ class BlinkTradeCli(object):
       self._secret = os.getenv('BLINKTRADE_API_SECRET')
       assert self._secret, 'No BLINKTRADE_API_SECRET'
 
+    if broker_id is None:
+      self._broker_id = int(os.getenv('BLINKTRADE_API_BROKER_ID',"11"))
 
   def _underscore_to_blinktrade_message_case(self,value):
     def camelcase():
@@ -51,13 +59,13 @@ class BlinkTradeCli(object):
     }
 
     blinktrade_api_url = "https://api.blinktrade.com"
-    if self._broker_id == 11:
+    if self._broker_id == 11 or self._broker_id == 8999999:
       blinktrade_api_url = "https://bitcambio_api.blinktrade.com"
 
     url = '%s/tapi/%s/message' % (blinktrade_api_url, BLINKTRADE_API_VERSION)
 
     if self._verbose:
-      print('SEND', msg)
+      print (msg)
 
     try:
       response = requests.post(url, json=msg, verify=True, headers=headers, timeout=TIMEOUT_IN_SECONDS)
@@ -67,12 +75,12 @@ class BlinkTradeCli(object):
       print(str(e))
       raise e
 
-  def get_list(self, list_msg_type, list_name, params, page=0, num_pages=None):
+  def get_list(self, list_msg_type, list_name, params, page=0, num_pages=1):
     res = []
     still_have_records_to_read = True
 
     while still_have_records_to_read:
-      if num_pages and page > num_pages:
+      if num_pages and page >= num_pages:
         break
 
       requestId = random.randint(1, 100000)
@@ -108,20 +116,33 @@ class BlinkTradeCli(object):
             res.insert(0, record)
     return res
 
-  def list_withdrawals(self,status_list=None, page=0, num_pages=None):
-    if status_list is None:
-      status_list = "[]"
+  def list_withdrawals(self,status=None, page=0, num_pages=1):
+    status_list = []
+    if status is not None:
+      status_list = [ str(status)  ]
 
     res = self._handle_withdraw_list(
       self.get_list('U26', 'WithdrawList', {'StatusList': status_list}, page, num_pages))
     self._printout_result(res[0], res[1])
 
-  def list_deposits(self,status_list=None, page=0, num_pages=None):
-    if status_list is None:
-      status_list = "[]"
+  def list_deposits(self,status=None, page=0, num_pages=1):
+    status_list = []
+    if status is not None:
+      status_list = [ str(status)  ]
+
     res = self._handle_deposit_list(
       self.get_list('U30', 'DepositList', {'StatusList': status_list}, page, num_pages))
     self._printout_result(res[0], res[1])
+
+  def list_users(self,status=1, page=0, num_pages=1, filter=None):
+    status_list = []
+    if status is not None:
+      status_list = [ int(status)  ]
+
+    res = self._handle_user_list(
+      self.get_list('B2', 'CustomerList', {'StatusList': status_list, 'Filter': filter}, page, num_pages))
+    self._printout_result(res[0], res[1])
+
 
   def _handle_response(self, api_response, msg_type):
     if api_response['Status'] != 200:
@@ -187,7 +208,116 @@ class BlinkTradeCli(object):
     if self._show_header:
       print json.dumps(res_header)[1:-1]
     for line in res_body:
-      print json.dumps(line)[1:-1]
+      print json.dumps(line, default=json_serial)[1:-1]
+
+
+  def _extract_user_verification_data(self, rec, verification_data_field="VerificationData"):
+    name = None
+    phone_number = None
+    identification = None
+    date_of_birth = None
+    address_city = None
+    address_street1 = None
+    address_street2 = None
+    address_state = None
+    address_postal_code = None
+    address_country_code = None
+    has_shared_device_with_other_accounts = False
+    other_accounts = set()
+
+    if verification_data_field in rec and rec[verification_data_field] is not None:
+      for d in rec[verification_data_field]:
+        if 'verification' in d:
+          if 'service_provider' in d['verification']:
+            if 'blinktrade_device_id_checker' == d['verification']['service_provider'] and \
+              'yes' == d['verification']['match_other_accounts']:
+              has_shared_device_with_other_accounts = True
+              for user_data_key, user_data_value in d.iteritems():
+                if user_data_key == 'verification':
+                  continue
+                for other_account in user_data_value:
+                  other_accounts.add(other_account)
+              continue
+
+        if "name" in d:
+          name = " ".join([d["name"]["first"], d["name"]["middle"], d["name"]["last"]])
+
+        if "address" in d:
+          address_city = d["address"]["city"]
+          address_street1 = d["address"]["street1"]
+          address_street2 = d["address"]["street2"]
+          address_state = d["address"]["state"]
+          address_postal_code = d["address"]["postal_code"]
+          address_country_code = d["address"]["country_code"]
+
+        if "phone_number" in d:
+          phone_number = d["phone_number"]
+
+        if "identification" in d:
+          identification = d["identification"].values()[0]
+
+        if "date_of_birth" in d:
+          date_of_birth = d["date_of_birth"]
+          date_of_birth_split = date_of_birth.split('-')
+          if len(date_of_birth_split) == 3 and len(date_of_birth_split[1]) < 3:
+            date_of_birth = datetime.date(year=int(date_of_birth_split[0]),
+                                          month=int(date_of_birth_split[1]),
+                                          day = int(date_of_birth_split[2]))
+
+        continue
+
+    return {
+      "Name": name,
+      "PhoneNumber": phone_number,
+      "GovID": identification,
+      "DateOfBirth": date_of_birth,
+      "AddressCity": address_city,
+      "AddressStreet1": address_street1,
+      "AddressStreet2": address_street2,
+      "AddressState": address_state,
+      "AddressPostalCode": address_postal_code,
+      "AddressCountryCode": address_country_code,
+      "HasSharedDeviceWithOtherAccounts": has_shared_device_with_other_accounts,
+      "OtherAccounts": other_accounts
+    }
+
+  def _handle_user_list(self, user_list):
+    record_headers = [
+      "ID", "GovID","Username", "Email", "PhoneNumber", "VerificationLevel", "Created", "LastLogin",
+      "Name", "DateOfBirth", "AddressCity", "AddressStreet1", "AddressStreet2", "AddressState",
+      "AddressPostalCode", "AddressCountryCode", "OtherAccounts"
+    ]
+    records = []
+
+    for rec in user_list:
+      if self._verbose == 1:
+        print(rec)
+
+      verification_data = self._extract_user_verification_data(rec)
+      if rec["Username"] in verification_data["OtherAccounts"]:
+        verification_data["OtherAccounts"].remove(rec["Username"])
+
+      records.append([
+        rec["ID"],
+        verification_data["GovID"],
+        rec["Username"],
+        rec["Email"],
+        verification_data["PhoneNumber"],
+        rec['Verified'],
+        rec["Created"],
+        rec['LastLogin'],
+        verification_data["Name"],
+        verification_data["DateOfBirth"],
+        verification_data["AddressCity"],
+        verification_data["AddressStreet1"],
+        verification_data["AddressStreet2"],
+        verification_data["AddressState"],
+        verification_data["AddressPostalCode"],
+        verification_data["AddressCountryCode"],
+        list(verification_data["OtherAccounts"])
+      ])
+
+    return record_headers, records
 
   def _handle_deposit_list(self, deposit_list):
     records = []
