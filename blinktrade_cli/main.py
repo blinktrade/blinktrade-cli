@@ -251,6 +251,7 @@ class BlinkTradeCli(object):
         rec["DepositID"],
         rec["Created"][:10],
         rec["Created"][11:],
+        rec["DepositMethodName"],
         rec["State"],
         int(rec["Status"]),
         rec["Username"],
@@ -267,7 +268,7 @@ class BlinkTradeCli(object):
         name,
         identification,
         phone_number,
-        rec["DepositMethodName"],
+
         receipt
       ]
       if self._verbose:
