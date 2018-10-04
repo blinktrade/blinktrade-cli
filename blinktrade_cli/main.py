@@ -1,6 +1,7 @@
 #!/usr/bin/env python 
 
 import hashlib
+import sys
 import hmac
 import requests
 import datetime
@@ -66,6 +67,7 @@ class BlinkTradeCli(object):
 
     url = '%s/tapi/%s/message' % (blinktrade_api_url, BLINKTRADE_API_VERSION)
 
+    print >> sys.stderr, msg
     if self._verbose:
       print >> sys.stderr, msg
 
