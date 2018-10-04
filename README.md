@@ -23,6 +23,7 @@ Testnet environment | 5 | [Testnet](https://testnet.blinktrade.com)
 $ export BLINKTRADE_API_KEY=gWFfWvD5UEOBDkGyI6ST7hoGPEMudJBBwn3Hv1rvBGQ
 $ export BLINKTRADE_API_SECRET=2LHLQoj0hNg9xcGQNRBMLtYCDTxqZhAdA2RTsKbHD2s
 $ export BLINKTRADE_API_BROKER_ID=11
+$ export BLINKTRADE_API_BACKEND=bitcambio
 ```
 
 4. download & install blinktrade-cli 
