@@ -67,7 +67,7 @@ class BlinkTradeCli(object):
     url = '%s/tapi/%s/message' % (blinktrade_api_url, BLINKTRADE_API_VERSION)
 
     if self._verbose:
-      print (msg)
+      print >> sys.stderr, msg
 
     try:
       response = requests.post(url, json=msg, verify=True, headers=headers, timeout=TIMEOUT_IN_SECONDS)
@@ -98,7 +98,7 @@ class BlinkTradeCli(object):
       api_response = self.send_message(msg)
       if api_response['Status'] != 200:
         if self._verbose:
-          print (api_response)
+          print >> sys.stderr, api_response
         return res
 
       api_responses = api_response['Responses']
@@ -293,7 +293,7 @@ class BlinkTradeCli(object):
 
     for rec in user_list:
       if self._verbose == 1:
-        print(rec)
+        print >> sys.stderr,rec
 
       verification_data = self._extract_user_verification_data(rec)
       if rec["Username"] in verification_data["OtherAccounts"]:
@@ -325,7 +325,7 @@ class BlinkTradeCli(object):
     records = []
     for rec in deposit_list:
       if self._verbose == 1:
-        print(rec)
+        print  >> sys.stderr, rec
 
       name = ""
       if "UserVerificationData" in rec and rec["UserVerificationData"] is not None:
@@ -404,7 +404,7 @@ class BlinkTradeCli(object):
         receipt
       ]
       if self._verbose:
-        print (rec)
+        print  >> sys.stderr, rec
       records.append(rec)
 
     return ['ID',
@@ -520,7 +520,7 @@ class BlinkTradeCli(object):
         rec["Status"]
       ]
       if self._verbose:
-        print (rec)
+        print  >> sys.stderr, rec
       records.append(rec)
 
     headers = ['ID', 'Date', 'Hour', 'Method', 'Username', 'BankNumber', 'BankCity', 'RecipientPhoneNumber',
