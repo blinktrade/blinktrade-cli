@@ -383,8 +383,8 @@ class BlinkTradeCli(object):
 
       rec = [
         rec["DepositID"],
-        rec["Created"][:10],
-        rec["Created"][11:],
+        rec["Created"],
+        rec["LastUpdate"],
         rec["DepositMethodName"],
         rec["State"],
         int(rec["Status"]),
@@ -410,8 +410,8 @@ class BlinkTradeCli(object):
       records.append(rec)
 
     return ['ID',
-            'Date',
-            'Hour',
+            'Created',
+            'LastUpdate',
             'Method',
             'State',
             'Status',
