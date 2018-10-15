@@ -402,7 +402,7 @@ class BlinkTradeCli(object):
         name,
         identification,
         phone_number,
-
+        rec["Currency"],
         receipt
       ]
       if self._verbose:
@@ -429,6 +429,7 @@ class BlinkTradeCli(object):
             'Name',
             'Identification',
             'PhoneNumber',
+            'Currency',
             'Receipt'], records
 
 
