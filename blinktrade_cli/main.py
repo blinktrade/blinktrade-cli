@@ -502,8 +502,8 @@ class BlinkTradeCli(object):
 
       rec = [
         rec["WithdrawID"],
-        rec["Created"][:10],
-        rec["Created"][11:],
+        rec["Created"],
+        rec["LastUpdate"],
         rec["Method"],
         rec["Username"],
         bank_number,
@@ -516,6 +516,7 @@ class BlinkTradeCli(object):
         account_holder_id,
         wallet,
         transaction_id,
+        rec['Currency'],
         rec["PaidAmount"] / 1e8,
         rec["Amount"] / 1e8,
         (rec["PaidAmount"] - rec["Amount"]) / 1e8,
@@ -526,9 +527,9 @@ class BlinkTradeCli(object):
         print  >> sys.stderr, rec
       records.append(rec)
 
-    headers = ['ID', 'Date', 'Hour', 'Method', 'Username', 'BankNumber', 'BankCity', 'RecipientPhoneNumber',
+    headers = ['ID', 'Created', 'LastUpdate', 'Method', 'Username', 'BankNumber', 'BankCity', 'RecipientPhoneNumber',
                'AccountBranch', 'AccountName', 'AccountType', 'AccountNumber', 'AccountHolderID',
-               'PaidAmount', 'Amount', 'PaidFees', 'Wallet', 'TransactionID',
+               'Currency', 'PaidAmount', 'Amount', 'PaidFees', 'Wallet', 'TransactionID',
                'PercentFee', 'Status']
     return headers, records
 
